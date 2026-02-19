@@ -1,0 +1,123 @@
+// Dino Ventures - Wallet Service Schema
+// Double-entry ledger architecture for virtual currency management
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Currency {
+  GOLD
+  DIAMONDS
+  LOYALTY
+}
+
+// ─── Asset Types ────────────────────────────────────────────────────────────────
+// Defines the types of virtual currencies in the system (Gold Coins, Diamonds, etc.)
+model AssetType {
+  id        String   @id @default(uuid())
+  name      Currency @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallets        Wallet[]
+  journalEntries JournalEntry[]
+
+  @@map("asset_types")
+}
+
+// ─── Account Types ──────────────────────────────────────────────────────────────
+enum AccountType {
+  USER
+  SYSTEM
+}
+
+// ─── Users ──────────────────────────────────────────────────────────────────────
+model User {
+  id        String      @id @default(uuid())
+  email     String      @unique
+  name      String
+  type      AccountType @default(USER)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  wallets         Wallet[]
+
+  @@map("users")
+}
+
+// ─── Wallets ────────────────────────────────────────────────────────────────────
+// Each user can have multiple wallets (one per asset type)
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String
+  assetId   String
+  balance   BigInt   @default(0) // stored as smallest unit (e.g., cents)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User      @relation(fields: [userId], references: [id])
+  asset AssetType @relation(fields: [assetId], references: [id])
+
+  journalEntries JournalEntry[]
+
+  @@unique([userId, assetId])
+  @@index([userId])
+  @@map("wallets")
+}
+
+// ─── Transaction Types ──────────────────────────────────────────────────────────
+enum TransactionType {
+  TOPUP    // Credits purchased with real money
+  BONUS    // Free credits issued by system
+  PURCHASE // Credits spent on in-app items
+}
+
+enum IdempotencyStatus {
+  ISSUED
+  PROCESSED
+}
+
+model IdempotencyKey {
+  key           String            @id @default(uuid())
+  status        IdempotencyStatus @default(ISSUED)
+  usedAt        DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@map("idempotency_keys")
+}
+
+// ─── Journal Entry Direction ────────────────────────────────────────────────────
+enum EntryDirection {
+  DEBIT
+  CREDIT
+}
+// ─── Journal Entries (Double-Entry Ledger) ───────────────────────────────────────
+// Every transaction creates exactly 2 entries: one DEBIT and one CREDIT
+// DEBIT  = money going INTO a wallet  (balance increases)
+// CREDIT = money going OUT of a wallet (balance decreases)
+model JournalEntry {
+  id            String @id @default(uuid())
+  walletId      String
+  assetId       String
+  transactionType TransactionType
+  transactionId String?   // If transtion is of type TOPUP  then transactionId will be present
+  direction     EntryDirection
+  amount        BigInt         // always positive
+  description   String?
+  referenceId   String?        // If transaction is of type PURCHASE then referenceId will be present
+  createdAt     DateTime       @default(now())
+  wallet      Wallet      @relation(fields: [walletId], references: [id])
+  asset       AssetType   @relation(fields: [assetId], references: [id])
+
+  @@index([walletId])
+  @@index([assetId])
+  @@index([createdAt])
+  @@map("journal_entries")
+}

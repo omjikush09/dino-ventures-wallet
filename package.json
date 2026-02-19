@@ -1,0 +1,58 @@
+{
+	"name": "dino-ventures",
+	"version": "1.0.0",
+	"description": "Dino Ventures — Virtual Wallet Service with Double-Entry Ledger",
+	"packageManager": "pnpm@10.21.0",
+	"main": "dist/server.js",
+	"scripts": {
+		"dev": "nodemon --watch src --ext ts --exec \"tsx src/index.ts\"",
+		"build": "tsc && prisma generate",
+		"start": "node dist/index.js",
+		"prisma:generate": "pnpm exec prisma generate",
+		"prisma:migrate": "pnpm exec prisma migrate dev",
+		"prisma:migrate:prod": "pnpm exec prisma migrate deploy",
+		"prisma:studio": "pnpm exec prisma studio",
+		"db:seed": "tsx src/scripts/seed.ts",
+		"db:seed:prod": "node dist/scripts/seed.js",
+		"lint": "tsc --noEmit",
+		"seed": "tsx src/scripts/seed.ts",
+		"setup": "pnpm exec prisma migrate dev && tsx src/scripts/seed.ts",
+		"docker:up": "docker compose up -d",
+		"docker:down": "docker compose down"
+	},
+	"keywords": [
+		"wallet",
+		"ledger",
+		"fintech",
+		"virtual-currency"
+	],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"dependencies": {
+		"@prisma/adapter-pg": "^7.4.0",
+		"@prisma/client": "^7.4.0",
+		"cors": "^2.8.6",
+		"express": "^5.2.1",
+		"helmet": "^8.1.0",
+		"morgan": "^1.10.1",
+		"pg": "^8.18.0",
+		"uuid": "^13.0.0",
+		"winston": "^3.19.0",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@types/cors": "^2.8.19",
+		"@types/express": "^5.0.6",
+		"@types/morgan": "^1.9.10",
+		"@types/node": "^25.3.0",
+		"@types/pg": "^8.16.0",
+		"@types/uuid": "^10.0.0",
+		"dotenv": "^17.3.1",
+		"nodemon": "^3.1.11",
+		"prisma": "^7.4.0",
+		"ts-node": "^10.9.2",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3"
+	}
+}
