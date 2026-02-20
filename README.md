@@ -1,147 +1,121 @@
-# 🦕 Dino Ventures Wallet Service
+# Dino Ventures Wallet Service
 
 Production-grade wallet service with double-entry ledger architecture, ACID compliance, and idempotency guarantees.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- Docker & Docker Compose
-- Node.js v18+ (optional, for local dev)
+- Docker + Docker Compose
+- Node.js 18+ (only for local non-docker development)
+- pnpm
 
-### Automated Setup (Recommended)
-
-Run the setup script to build containers, migrate database, and seed initial data:
-
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-The API will be available at `http://localhost:3000`.
-
----
-
-## 🏗 Architecture & Design Decisions
-
-### 1. Double-Entry Ledger
-
-Instead of a simple `balance` column, every transaction is recorded as two immutable **Journal Entries** (Credit & Debit). This ensures:
-
-- **Auditability**: Complete history of fund movement.
-- **Consistency**: Sum of all debits = sum of all credits.
-- **System Integrity**: Validates money is not created or destroyed.
-
-### 2. Concurrency Control (Deadlock Avoidance)
-
-High-concurrency scenarios (e.g., thousands of users topping up simultaneously) can cause race conditions.
-
-- **Problem**: Deadlocks occur when two transactions lock resources in different orders.
-- **Solution**: **Consistent Lock Ordering**.
-  - All transactions lock participating wallets in **lexicographical order** (ID sort).
-  - Uses `SELECT ... FOR UPDATE` to acquire row-level locks.
-  - Implements **Serializable** isolation level for strict consistency.
-  - Automatic **retry mechanism** with exponential backoff for serialization failures.
-
-### 3. Idempotency
-
-Prevents duplicate processing of the same transaction (e.g., network retries).
-
-- Clients must provide a unique `idempotencyKey` for every mutation.
-- The system checks if the key exists before processing.
-- If found, returns the original successful response without re-executing logic.
-
-### 4. Tech Stack
-
-- **Language**: TypeScript (Node.js)
-- **Database**: PostgreSQL 15
-- **ORM**: Prisma v7 (with `@prisma/adapter-pg` driver adapter for direct connection)
-- **Validation**: Zod v4
-- **Logging**: Winston (JSON format in production)
-
----
-
-## 📚 API Endpoints
-
-### 1. Top-Up Wallet
-
-Credit user funds from external source.
-
-`POST /api/wallet/topup`
-
-```json
-{
-	"userId": "uuid-user-id",
-	"assetCode": "GOLD",
-	"amount": "100",
-	"idempotencyKey": "unique-req-id"
-}
-```
-
-### 2. Issue Bonus
-
-System issues free credits.
-
-`POST /api/wallet/bonus`
-
-```json
-{
-	"userId": "uuid-user-id",
-	"assetCode": "GOLD",
-	"amount": "50",
-	"idempotencyKey": "unique-req-id-2"
-}
-```
-
-### 3. Purchase Item
-
-Spend user credits.
-
-`POST /api/wallet/purchase`
-
-```json
-{
-	"userId": "uuid-user-id",
-	"assetCode": "GOLD",
-	"amount": "25",
-	"idempotencyKey": "unique-req-id-3"
-}
-```
-
-### 4. Check Balance
-
-`GET /api/wallet/balance/:userId?assetCode=GOLD`
-
-### 5. Transaction History
-
-`GET /api/wallet/transactions?userId=uuid-user-id&limit=20&offset=0`
-
----
-
-## 🛠 Local Development
+### Run with Docker Compose (recommended)
 
 ```bash
-# Install dependencies
+docker compose up -d --build
+```
+
+API: `http://localhost:3000`
+
+Notes:
+- Postgres image is `postgres:18`
+- API container startup runs:
+  - `prisma migrate deploy`
+  - production seed
+  - app start
+
+## Local Development
+
+1. Install deps:
+
+```bash
 pnpm install
+```
 
-# Start database
+2. Ensure env is available (for example via `.env`):
+
+```env
+DATABASE_URL=postgresql://postgres:postgrespassword@localhost:5432/dino_wallet?schema=public
+NODE_ENV=development
+PORT=3000
+```
+
+3. Start DB:
+
+```bash
 docker compose up -d db
+```
 
-# Run migrations
-pnpm exec prisma migrate dev
+4. Run migrations + seed:
 
-# Seed data
+```bash
+pnpm run prisma:migrate
 pnpm run db:seed
+```
 
-# Start dev server
+5. Start API:
+
+```bash
 pnpm run dev
 ```
 
-## 🧪 Testing
+Health endpoint: `GET /health`
 
-To reset the database and re-seed:
+## API Notes
 
-```bash
-pnpm exec prisma migrate reset
-pnpm run db:seed
+- Header required for mutating wallet endpoints:
+  - `idempotency-key: <uuid>`
+- Currency field name is `assetName` (values: `GOLD`, `DIAMONDS`, `LOYALTY`)
+- `amount` is a positive integer string
+
+### Wallet Endpoints
+
+- `POST /api/wallet/idempotency-key`
+- `POST /api/wallet/topup`
+- `POST /api/wallet/bonus`
+- `POST /api/wallet/purchase`
+- `GET /api/wallet/balance/:userId?assetName=GOLD`
+- `GET /api/wallet/transactions?walletId=<uuid>&limit=20&offset=0`
+- `GET /api/wallet/transactions/:id`
+
+### Example Payloads
+
+Top-up:
+
+```json
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "assetName": "GOLD",
+  "amount": "100",
+  "transactionId": "9f1c2e34-7b8a-4c6d-9e0f-1a2b3c4d5e6f"
+}
 ```
+
+Bonus:
+
+```json
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "assetName": "GOLD",
+  "amount": "50"
+}
+```
+
+Purchase:
+
+```json
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "assetName": "GOLD",
+  "amount": "25",
+  "referenceId": "9f1c2e34-7b8a-4c6d-9e0f-1a2b3c4d5e6f"
+}
+```
+
+## Postman
+
+- Shared workspace collection:
+  - https://www.postman.com/restless-space-930352/workspace/dino-ventures/collection/14294787-25078237-b8cd-4a1f-8977-8acb994f9787?action=share&creator=14294787
+
+

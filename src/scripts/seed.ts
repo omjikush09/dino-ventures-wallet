@@ -1,11 +1,7 @@
-import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { AccountType, Currency, IdempotencyStatus, EntryDirection, PrismaClient, TransactionType } from "../generated/prisma/client";
+import { AccountType, Currency } from "../generated/prisma/client";
 import logger from "../lib/logger";
 import { SYSTEM_ACCOUNTS } from "../lib/constants";
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+import prisma from "../lib/prisma";
 
 async function seed() {
 	logger.info("🌱 Starting database seeding...");
