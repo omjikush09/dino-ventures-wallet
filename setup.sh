@@ -21,7 +21,7 @@ done
 
 echo "⏳ Waiting for API to be ready (migrations running)..."
 # Loop until /health endpoint returns 200
-until curl -s -f http://localhost:3000/health > /dev/null; do
+until curl -s -f http://localhost:3000/api/health > /dev/null; do
   echo "Waiting for API to start..."
   sleep 3
 done

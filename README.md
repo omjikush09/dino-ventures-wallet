@@ -10,20 +10,24 @@ Production-grade wallet service with double-entry ledger architecture, ACID comp
 - Node.js 18+ (only for local non-docker development)
 - pnpm
 
-### Run with Docker Compose (recommended)
+### Quick Deployment (recommended)
 
 ```bash
-docker compose up -d --build
+chmod +x setup.sh
+./setup.sh
 ```
 
 API: `http://localhost:3000`
 
 Notes:
 - Postgres image is `postgres:18`
-- API container startup runs:
-  - `prisma migrate deploy`
-  - production seed
-  - app start
+- `setup.sh` builds/starts containers and waits until API health is ready
+
+### Manual Docker Compose
+
+```bash
+docker compose up -d --build
+```
 
 ## Local Development
 
@@ -117,5 +121,4 @@ Purchase:
 
 - Shared workspace collection:
   - https://www.postman.com/restless-space-930352/workspace/dino-ventures/collection/14294787-25078237-b8cd-4a1f-8977-8acb994f9787?action=share&creator=14294787
-
 
