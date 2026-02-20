@@ -23,6 +23,11 @@ Notes:
 - Postgres image is `postgres:18`
 - `setup.sh` builds/starts containers and waits until API health is ready
 
+## Live Deployment
+
+- URL: `https://dino-ventures-wallet-production.up.railway.app`
+- Hosted as a serverless deployment, so the initial request after inactivity may take some time (cold start).
+
 ### Manual Docker Compose
 
 ```bash
@@ -121,4 +126,3 @@ Purchase:
 
 - Shared workspace collection:
   - https://www.postman.com/restless-space-930352/workspace/dino-ventures/collection/14294787-25078237-b8cd-4a1f-8977-8acb994f9787?action=share&creator=14294787
-
