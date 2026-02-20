@@ -8,6 +8,7 @@
 		"dev": "nodemon --watch src --ext ts --exec \"tsx src/index.ts\"",
 		"build": "tsc && prisma generate",
 		"start": "node dist/index.js",
+		"migrate:start":"pnpm run prisma:migrate:prod && pnpm run db:seed:prod && pnpm run start",
 		"prisma:generate": "pnpm exec prisma generate",
 		"prisma:migrate": "pnpm exec prisma migrate dev",
 		"prisma:migrate:prod": "pnpm exec prisma migrate deploy",
