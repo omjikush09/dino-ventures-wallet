@@ -71,6 +71,24 @@ pnpm run dev
 
 Health endpoint: `GET /health`
 
+## Reliability Guarantees
+
+### 1. Concurrency & Race Conditions
+
+- Wallet mutations run inside a Prisma DB transaction.
+- The target wallet row is explicitly locked using `SELECT ... FOR UPDATE` before balance updates.
+- On lock conflicts/deadlocks/serialization failures, operations are retried with exponential backoff + jitter (`MAX_TRANSACTION_RETRIES`).
+- Balance updates are computed from the locked row and rejected if result would go negative.
+
+### 2. Idempotency
+
+- Clients call `POST /api/wallet/idempotency-key` to get a UUID key.
+- Mutating endpoints require the `idempotency-key` request header.
+- Inside the same transaction, the idempotency key row is locked (`FOR UPDATE`) and checked:
+  - Missing key -> `INVALID_IDEMPOTENCY_KEY`
+  - Already used (`PROCESSED`) -> `IDEMPOTENCY_KEY_ALREADY_USED`
+- After successful journal + wallet update, key status is marked `PROCESSED` with `usedAt`.
+
 ## API Notes
 
 - Header required for mutating wallet endpoints:
